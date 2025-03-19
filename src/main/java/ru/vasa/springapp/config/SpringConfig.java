@@ -61,11 +61,12 @@ public class SpringConfig implements WebMvcConfigurer {
 
     @Bean
     public DataSource dataSource() {
+        /*
         System.out.println(environment.getProperty("driver"));
         System.out.println(environment.getProperty("url"));
         System.out.println(environment.getProperty("usernameDB"));
         System.out.println(environment.getProperty("password"));
-
+        */
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName(Objects.requireNonNull(environment.getProperty("driver")));
         dataSource.setUrl(environment.getProperty("url"));

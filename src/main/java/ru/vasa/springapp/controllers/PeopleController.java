@@ -20,7 +20,7 @@ public class PeopleController {
         this.personDAO = personDAO;
     }
 
-    @GetMapping("/index")
+    @GetMapping(    "/index")
     public String index(Model model) {
         //получим всех людей из DAO и отобразим их
         model.addAttribute("people",personDAO.index());

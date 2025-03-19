@@ -2,6 +2,7 @@ package ru.vasa.springapp.dao;
 
 import org.hibernate.validator.constraints.pl.PESEL;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -99,6 +100,53 @@ public class PersonDAO {
 //        } catch (SQLException e) {
 //            throw new RuntimeException(e);
         jdbcTemplate.update("DELETE  FROM person WHERE id=?",id);
+    }
+
+    /// //////Тест производительность пакетной вставки/////////////
+    public void testMultipleUpdate(){
+        List<Person> people = create1000people();
+        long start = System.currentTimeMillis();
+
+        for (Person person : people) {
+            jdbcTemplate.update("INSERT INTO person VALUES(?,?,?,?)",person.getId(),person.getName(),person.getAge(),person.getMail());
+        }
+
+        long end = System.currentTimeMillis();
+        System.out.println("Time=" + (end - start));
+    }
+    private List<Person> create1000people(){
+        List<Person> people = new ArrayList<>();
+        for (int i = 10; i < 1010; i++) {
+            people.add(new Person(i,"Name_"+i,i,"mail@mail.com"+i));
+        }
+        return people;
+    }
+
+    public void testPatchUpdate(){
+
+        List<Person> people = create1000people();
+
+        long start = System.currentTimeMillis();
+
+        jdbcTemplate.batchUpdate("INSERT INTO person VALUES(?,?,?,?)",
+                new BatchPreparedStatementSetter() {
+                    @Override
+                    public void setValues(PreparedStatement ps, int i) throws SQLException {
+                        ps.setInt(1,people.get(i).getId());
+                        ps.setString(2,people.get(i).getName());
+                        ps.setInt(3,people.get(i).getAge());
+                        ps.setString(4,people.get(i).getMail());
+                    }
+
+
+                    @Override
+                    public int getBatchSize() {
+                        return people.size();
+                    }
+                });
+
+        long end = System.currentTimeMillis();
+        System.out.println("Time=" + (end - start));
     }
 }
 
