@@ -6,11 +6,13 @@ import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import ru.vasa.springapp.models.Book;
 import ru.vasa.springapp.models.Person;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class PersonDAO {
@@ -60,9 +62,16 @@ public class PersonDAO {
                 .stream().findAny().orElse(null);
 
     }
+    //Можно заменить на Person->Optional<Person> .OrElse(null)->X
+    public Person show(String mail) {
+        return jdbcTemplate.query("SELECT * FROM person WHERE mail=?",new Object[]{mail},
+                new BeanPropertyRowMapper<>(Person.class)).stream().findAny().orElse(null);
+
+    }
 
     public void save(Person person) {
-        jdbcTemplate.update("INSERT INTO person VALUES(1,?,?,?)",person.getName(),person.getAge(),person.getMail());
+        jdbcTemplate.update("INSERT INTO person (full_name, year_of_birth) VALUES(?,?)",
+                person.getFullName(),person.getYearOfBirth());
         /*try{
 //            Statement statement = conn.createStatement();
 //            String SQL = "INSERT INTO person VALUES ("+
@@ -85,9 +94,9 @@ public class PersonDAO {
     }
 
     public void update(int id,Person newperson) {
-        jdbcTemplate.update("UPDATE person SET name=?, age=?, mail=? WHERE id=?",
-                newperson.getName(),newperson.getAge(),
-                newperson.getMail(),id);
+        jdbcTemplate.update("UPDATE person SET full_name=?, year_of_birth=? WHERE id=?",
+                newperson.getFullName(),
+                newperson.getYearOfBirth(),id);
 
     }
 
@@ -102,51 +111,65 @@ public class PersonDAO {
         jdbcTemplate.update("DELETE  FROM person WHERE id=?",id);
     }
 
-    /// //////Тест производительность пакетной вставки/////////////
-    public void testMultipleUpdate(){
-        List<Person> people = create1000people();
-        long start = System.currentTimeMillis();
+//    /// //////Тест производительность пакетной вставки/////////////
+//    public void testMultipleUpdate(){
+//        List<Person> people = create1000people();
+//        long start = System.currentTimeMillis();
+//
+//        for (Person person : people) {
+//            jdbcTemplate.update("INSERT INTO person VALUES(?,?,?,?)",person.getId(),person.getName(),person.getAge(),person.getMail());
+//        }
+//
+//        long end = System.currentTimeMillis();
+//        System.out.println("Time=" + (end - start));
+//    }
 
-        for (Person person : people) {
-            jdbcTemplate.update("INSERT INTO person VALUES(?,?,?,?)",person.getId(),person.getName(),person.getAge(),person.getMail());
-        }
+//    private List<Person> create1000people(){
+//        List<Person> people = new ArrayList<>();
+//        for (int i = 10; i < 1010; i++) {
+//            people.add(new Person(i,"Name_"+i,i,"mail@mail.com"+i,"ddsds"));
+//        }
+//        return people;
+//    }
 
-        long end = System.currentTimeMillis();
-        System.out.println("Time=" + (end - start));
+//    public void testPatchUpdate(){
+//
+//        List<Person> people = create1000people();
+//
+//        long start = System.currentTimeMillis();
+//
+//        jdbcTemplate.batchUpdate("INSERT INTO person VALUES(?,?,?,?)",
+//                new BatchPreparedStatementSetter() {
+//                    @Override
+//                    public void setValues(PreparedStatement ps, int i) throws SQLException {
+//                        ps.setInt(1,people.get(i).getId());
+//                        ps.setString(2,people.get(i).getName());
+//                        ps.setInt(3,people.get(i).getAge());
+//                        ps.setString(4,people.get(i).getMail());
+//                    }
+//
+//
+//                    @Override
+//                    public int getBatchSize() {
+//                        return people.size();
+//                    }
+//                });
+//
+//        long end = System.currentTimeMillis();
+//        System.out.println("Time=" + (end - start));
+//    }
+
+    //Для валидации уникальности ФИО
+    public Optional<Person> getPersonByFullname(String fullname) {
+        return jdbcTemplate.query("SELECT * FROM person WHERE full_name=?",
+                new Object[]{fullname},
+                new BeanPropertyRowMapper<>(Person.class)).stream().findAny();
     }
-    private List<Person> create1000people(){
-        List<Person> people = new ArrayList<>();
-        for (int i = 10; i < 1010; i++) {
-            people.add(new Person(i,"Name_"+i,i,"mail@mail.com"+i));
-        }
-        return people;
-    }
 
-    public void testPatchUpdate(){
-
-        List<Person> people = create1000people();
-
-        long start = System.currentTimeMillis();
-
-        jdbcTemplate.batchUpdate("INSERT INTO person VALUES(?,?,?,?)",
-                new BatchPreparedStatementSetter() {
-                    @Override
-                    public void setValues(PreparedStatement ps, int i) throws SQLException {
-                        ps.setInt(1,people.get(i).getId());
-                        ps.setString(2,people.get(i).getName());
-                        ps.setInt(3,people.get(i).getAge());
-                        ps.setString(4,people.get(i).getMail());
-                    }
-
-
-                    @Override
-                    public int getBatchSize() {
-                        return people.size();
-                    }
-                });
-
-        long end = System.currentTimeMillis();
-        System.out.println("Time=" + (end - start));
+    //Join не нужен тк уже получили отдельного человека с помощью другого метода
+    public List<Book> getBooksByPersonId(int id){
+        return jdbcTemplate.query("SELECT * FROM book WHERE person_id = ?",new Object[]{id},
+                new BeanPropertyRowMapper<>(Book.class));
     }
 }
 

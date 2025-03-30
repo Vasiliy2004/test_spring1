@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import ru.vasa.springapp.dao.PersonDAO;
 
+//Для тестирования пакетной вставки
 @Controller
 @RequestMapping("/test-batch-update")
 public class BatchController {
@@ -28,7 +29,7 @@ public class BatchController {
 
     @GetMapping("/with")
     public String withBatch(){
-        personDAO.testPatchUpdate();
+        //personDAO.testMultipleUpdate();
             return "redirect:/people/index";
     }
 }
